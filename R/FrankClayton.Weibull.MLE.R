@@ -2,7 +2,7 @@
 #'
 #' Perform two-stage estimation based on the Frank copula C_theta for serial dependence and the Clayton copula tilde(C)_alpha for dependent censoring with the marginal disributions Weib(r, nu_1) and Weib(lambda, nu_2). The jackknife method estimates the asymptotic covariance matrix. Parametric bootstrap is applied while doing Kolmogorov-Smirnov tests and Cramer-von Mises test. The guide for using this function shall be explained by Huang (2019).
 #'
-#' @usage FrankClayton.Weibull.MLE(subject, t.event, event, t.death, death,
+#' @usage FrankClayton.Weibull.MLE(subject, t.event, event, t.death, death, stageI, Weibull.plot,
 #'                                jackknife, plot, GOF, GOF.plot, rep.GOF, digit)
 #'
 #' @import survival stats graphics
@@ -15,6 +15,8 @@
 #' @param event a vector for event indivator (=1 if recurrent; =0 if censoring)
 #' @param t.death a vector for death times
 #' @param death a vector for death indivator (=1 if death; =0 if censoring)
+#' @param stageI an option to select MLE or LSE method for the 1st-stage optimization
+#' @param Weibull.plot if TRUE, show the Weibull probability plot
 #' @param jackknife if TRUE, the jackknife method is used for estimate covariance matrix (default = TRUE)
 #' @param plot if TRUE, the plots for marginal distributions are shown (default = FALSE)
 #' @param GOF if TRUE, show the p-values for KS-test and CvM-test
@@ -40,12 +42,12 @@
 #' \item{Jackknife_error}{Count for error in jackknife repititions}
 #' \item{Log_likelihood}{Log-likelihood values}
 #'
-#' @details When jackknife = FALSE, the corresponding values of standard error and confidence interval show NA.
+#' @details When jackknife=FALSE, the corresponding standard error and confidence interval values are shown as NA.
 #'
 #' @examples
 #' data = FrankClayton.Weibull.data(r = 1, nu_1 =0.5, theta = 2,
 #'                                  lambda = 0.45, nu_2 = 0.5, alpha = 2,
-#'                                  N = 30, c = 10, l = 300)
+#'                                  N = 30, b = 10, l = 300)
 #'
 #'  \donttest{
 #' FrankClayton.Weibull.MLE(subject = data$Subject,
@@ -58,9 +60,9 @@
 #'
 #' @export
 
-FrankClayton.Weibull.MLE = function(subject, t.event, event, t.death, death,
-                                      jackknife = TRUE, plot = FALSE, GOF = FALSE, GOF.plot = FALSE,
-                                      rep.GOF = 200, digit = 5){
+FrankClayton.Weibull.MLE = function(subject, t.event, event, t.death, death, stageI = "MLE", Weibull.plot = FALSE,
+                                    jackknife = TRUE, plot = FALSE, GOF = FALSE, GOF.plot = FALSE,
+                                    rep.GOF = 200, digit = 5){
 
   #####Declare variables
   case = NA
@@ -92,6 +94,28 @@ FrankClayton.Weibull.MLE = function(subject, t.event, event, t.death, death,
   )
 
   #####Begin Stage I
+
+  #Nelson Aalen estimator function
+  NelsonAalen = function(time, status){
+
+    temp = as.data.frame(cbind(time, status))
+
+    table = as.data.frame(  matrix(NA, ncol = 3, nrow = 1) )
+    colnames(table) = c("t_i", "n_i", "d_i")
+    for( t in sort(unique(time)) ){
+      table[which(sort(unique(time)) == t), ] =
+        c(t, sum(temp$time >= t), sum(temp[which(temp$time == t),2]) )
+    }
+
+    table = cbind( table, Hazard_i = cumsum(table$d_i/table$n_i) )
+
+    return(table)
+  }
+
+  #LSE
+  NA.estimator = NelsonAalen(time = t.event , status = event)
+  result.LSE = lm(log(NA.estimator$Hazard_i[NA.estimator$d_i>0])~log(NA.estimator$t_i[NA.estimator$d_i>0]))
+
   #Initial value
   p0_D = log( c(1/mean(t.death), 1) )
 
@@ -114,17 +138,34 @@ FrankClayton.Weibull.MLE = function(subject, t.event, event, t.death, death,
   result.stageI = nlm(logL_D, p0_D)
 
   #Output
-  result.estimate.tilde[5] = result.stageI$estimate[1]
-  result.estimate.tilde[6] = result.stageI$estimate[2]
-  result.convergence[1] = ifelse(result.stageI$code==1, 1, 0)
-  result.estimate = exp(result.estimate.tilde)
+  if(stageI == "MLE"){
+    result.estimate.tilde[5] = result.stageI$estimate[1]
+    result.estimate.tilde[6] = result.stageI$estimate[2]
+    result.convergence[1] = ifelse(result.stageI$code==1, 1, 0)
+    result.estimate = exp(result.estimate.tilde)
+  }
+
+  if(stageI == "LSE"){
+    result.estimate.tilde[5] = log(as.numeric(exp(result.LSE$coefficients[1])))
+    result.estimate.tilde[6] = log(as.numeric(result.LSE$coefficients[2]))
+    result.estimate = exp(result.estimate.tilde)
+  }
+  if(Weibull.plot == "TRUE"){
+    par(mar=c(4,5,2,2))
+    plot(log(NA.estimator$Hazard_i[NA.estimator$d_i>0])~log(NA.estimator$t_i[NA.estimator$d_i>0]),
+         ylab = expression( paste("log(",hat(Lambda),"(",T[i]^"*","))") ),
+         xlab = expression( paste("log(",T[i]^"*",")") ), main = "Weibull probability plot" )
+    abline(result.LSE)
+    legend("topleft", legend = c("Fitted"), lty = 1, bty = "n")
+  }
+
   #####End Stage I
 
   #####Begin Stage II
   #Initial value
   tau_alpha_0 = cor(T_i1, t.death, method = "kendall") #sample kendall's tau for Xi1 and Di
   p0 = c( log(1/mean(t.event)), 0, 1,
-               log(min(max(2 * tau_alpha_0/(1 - tau_alpha_0), 0.001), 12)))
+          log(min(max(2 * tau_alpha_0/(1 - tau_alpha_0), 0.001), 12)))
 
   #Full likelihood
   logL = function(par){
@@ -135,7 +176,7 @@ FrankClayton.Weibull.MLE = function(subject, t.event, event, t.death, death,
     r = exp(par[1])
     nu_1 = exp(par[2])
     theta = par[3]
-    alpha = exp(par[4])
+    alpha = max(exp(par[4]),0.00001)
 
     #corresponding D function
     A_theta = function(s,t){
@@ -172,8 +213,7 @@ FrankClayton.Weibull.MLE = function(subject, t.event, event, t.death, death,
       lambda.T_i_star = lambda*nu_2*T_i_star^(nu_2-1)
       Lambda.T_i_star = lambda*T_i_star^nu_2
       #likelihood for ni=1
-      l_i = delta_i_star*log(lambda.T_i_star) - delta_i_star*delta_ij[1]*Lambda.T_i_star +
-        delta_i_star*log(Lambda.T_i_star) + delta_ij[1]*log(r.T_ij[1]) +
+      l_i = delta_i_star*log(lambda.T_i_star) + delta_ij[1]*log(r.T_ij[1]) +
         delta_i_star*delta_ij[1]*log( D.tilde_alpha_11(R.T_ij[1], Lambda.T_i_star) ) +
         delta_i_star*(1-delta_ij[1])*log( D.tilde_alpha_01(R.T_ij[1], Lambda.T_i_star) ) +
         (1 - delta_i_star)*log( D.tilde_alpha_10(R.T_ij[1], Lambda.T_i_star) )+
@@ -214,7 +254,7 @@ FrankClayton.Weibull.MLE = function(subject, t.event, event, t.death, death,
       no = which(subject == unique(subject)[i])
       temp = Theta_k = NA
       temp = try(FrankClayton.Weibull.MLE(subject = subject[-no], t.event = t.event[-no], event = event[-no],
-                                            t.death = t.death[-i], death = death[-i], jackknife = FALSE, digit = 10))
+                                          t.death = t.death[-i], death = death[-i], stageI = stageI, jackknife = FALSE, digit = 10))
       if ("try-error"%in%class(temp)){
         jackknife.error = jackknife.error + 1
         next;
@@ -304,11 +344,11 @@ FrankClayton.Weibull.MLE = function(subject, t.event, event, t.death, death,
     for(b in c(1:rep.GOF)){
       set.seed(b)
       data_b = FrankClayton.Weibull.data(r = result.estimate[1], nu_1 = result.estimate[2], theta = result.estimate[3],
-                                           lambda = result.estimate[5], nu_2 = result.estimate[6], alpha = result.estimate[4],
-                                           N = N, c = max(t.death[death==0]), l = 200)
+                                         lambda = result.estimate[5], nu_2 = result.estimate[6], alpha = result.estimate[4],
+                                         N = N, b = max(t.death[death==0]), l = 200)
       result.bootstrap.temp = try(FrankClayton.Weibull.MLE(subject = data_b$Subject, t.event = data_b$T_ij, event = data_b$delta_ij,
-                                                             t.death = data_b$T_i_star, death = data_b$delta_i_star,
-                                                             jackknife = FALSE, plot = FALSE, GOF = FALSE))
+                                                           t.death = data_b$T_i_star, death = data_b$delta_i_star, stageI = stageI,
+                                                           jackknife = FALSE, plot = FALSE, GOF = FALSE))
       if("try-error"%in%result.bootstrap.temp){
         next;
       }else{
@@ -337,21 +377,89 @@ FrankClayton.Weibull.MLE = function(subject, t.event, event, t.death, death,
   }
   #####End GOF
 
+  #####Likelihood value
+  logL.value = function(par){
+
+    r = par[1]
+    nu_1 = par[2]
+    theta = par[3]
+    alpha = par[4]
+    lambda = par[5]
+    nu_2 = par[6]
+
+    #corresponding D function
+    A_theta = function(s,t){
+      1 + ( exp(-theta*exp(-s))-1 )*( exp(-theta*exp(-t))-1 )/(exp(-theta)-1)
+    }
+    D_theta_01 = function(s,t){
+      (exp(-theta*exp(-s))-1)*exp(-theta*exp(-t))*exp(-t)/(A_theta(s,t)*(exp(-theta)-1))
+    }
+    D_theta_11 = function(s,t){
+      -theta*exp(-theta*exp(-s))*exp(-theta*exp(-t))*exp(-s)*exp(-t)/(A_theta(s,t)^2*(exp(-theta)-1))
+    }
+    A.tilde_alpha = function(s,t){ exp(alpha*s) + exp(alpha*t) - 1 }
+    D.tilde_alpha = function(s,t){ A.tilde_alpha(s,t)^(-1/alpha) }
+    D.tilde_alpha_01 = function(s,t){ A.tilde_alpha(s,t)^(-1/alpha-1)*exp(alpha*t) }
+    D.tilde_alpha_10 = function(s,t){ A.tilde_alpha(s,t)^(-1/alpha-1)*exp(alpha*s) }
+    D.tilde_alpha_11 = function(s,t){ (alpha+1)*A.tilde_alpha(s,t)^(-1/alpha-2)*exp(alpha*s)*exp(alpha*t) }
+
+    l = 0
+
+    for(i in c(1:N)){
+
+      l_i = 0
+
+      no = which(subject == unique(subject)[i])
+      n_i = length(no)
+      T_ij = t.event[no]
+      delta_ij = event[no]
+      T_i_star = t.death[i]
+      delta_i_star = death[i]
+      #marginal Weibull for Xij
+      r.T_ij = r*nu_1*T_ij^(nu_1-1)
+      R.T_ij = r*T_ij^nu_1
+      #marginal Weibull for Dij
+      lambda.T_i_star = lambda*nu_2*T_i_star^(nu_2-1)
+      Lambda.T_i_star = lambda*T_i_star^nu_2
+      #likelihood for ni=1
+      l_i = delta_i_star*log(lambda.T_i_star) + delta_ij[1]*log(r.T_ij[1]) +
+        delta_i_star*delta_ij[1]*log( D.tilde_alpha_11(R.T_ij[1], Lambda.T_i_star) ) +
+        delta_i_star*(1-delta_ij[1])*log( D.tilde_alpha_01(R.T_ij[1], Lambda.T_i_star) ) +
+        (1 - delta_i_star)*log( D.tilde_alpha_10(R.T_ij[1], Lambda.T_i_star) )+
+        (1 - delta_i_star)*(1-delta_ij[1])*log( D.tilde_alpha(R.T_ij[1], Lambda.T_i_star) )
+      #likelihood for ni>=2
+      if(n_i >= 2){
+        l_i = l_i + sum(
+          R.T_ij[1:(n_i-1)] + delta_ij[2:n_i]*log(r.T_ij[2:n_i]) +
+            delta_ij[2:n_i]*log( D_theta_11(R.T_ij[2:n_i],R.T_ij[1:(n_i-1)]) ) +
+            (1 - delta_ij[2:n_i])*log( D_theta_01(R.T_ij[2:n_i],R.T_ij[1:(n_i-1)]) )
+        )
+      }
+
+      l = l + l_i
+    }
+
+    return(l)
+
+  }
+  #####
+
   return(
     list(
       Sample_size = N, Case = case,
-      r = round(c(Estimate = result.estimate[1], SE = result.se[1], LB = result.lowerbound[1], UB = result.upperbound[1]),digit),
-      nu_1 = round(c(Estimate = result.estimate[2], SE = result.se[2], LB = result.lowerbound[2], UB = result.upperbound[2]),digit),
-      lambda = round(c(Estimate = result.estimate[5], SE = result.se[5], LB = result.lowerbound[5], UB = result.upperbound[5]),digit),
-      nu_2 = round(c(Estimate = result.estimate[6], SE = result.se[6], LB = result.lowerbound[6], UB = result.upperbound[6]),digit),
-      theta = round(c(Estimate = result.estimate[3], SE = result.se[3], LB = result.lowerbound[3], UB = result.upperbound[3]),digit),
-      alpha = round(c(Estimate = result.estimate[4], SE = result.se[4], LB = result.lowerbound[4], UB = result.upperbound[4]),digit),
+      r = round(c(Estimate = result.estimate[1], SE = result.se[1], Lower = result.lowerbound[1], Upper = result.upperbound[1]),digit),
+      nu_1 = round(c(Estimate = result.estimate[2], SE = result.se[2], Lower = result.lowerbound[2], Upper = result.upperbound[2]),digit),
+      lambda = round(c(Estimate = result.estimate[5], SE = result.se[5], Lower = result.lowerbound[5], Upper = result.upperbound[5]),digit),
+      nu_2 = round(c(Estimate = result.estimate[6], SE = result.se[6], Lower = result.lowerbound[6], Upper = result.upperbound[6]),digit),
+      theta = round(c(Estimate = result.estimate[3], SE = result.se[3], Lower = result.lowerbound[3], Upper = result.upperbound[3]),digit),
+      alpha = round(c(Estimate = result.estimate[4], SE = result.se[4], Lower = result.lowerbound[4], Upper = result.upperbound[4]),digit),
       COV = result.cov.tilde,
       KS = round(c(Event = KS.R, Death = KS.D),2), p.KS = round(c(Event = KS.R_p, Death = KS.D_p),3),
       CM = round(c(Event = CM.R, Death = CM.D),2), p.CM = round(c(Event = CM.R_p, Death = CM.D_p),3),
       Convergence = result.convergence,
       Jackknife_error = jackknife.error,
-      Log_likelihood = -logL(result.estimate.tilde)
+      Log_likelihood = logL.value(result.estimate)
     )
   )
 }
+

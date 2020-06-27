@@ -2,7 +2,7 @@
 #'
 #' The data generation process is based on the Frank copula C_theta for serial dependence and the Clayton copula tilde(C)_alpha for dependent censoring with the marginal disributions Weib(r, nu_1) and Weib(lambda, nu_2). Censoring percentage can be controled by constant c. This function is used when doing parametric bootstrap. The guide for using this function shall be explained by Huang (2019).
 #'
-#' @usage FrankClayton.Weibull.data(r, nu_1, theta, lambda, nu_2, alpha, N, c, l)
+#' @usage FrankClayton.Weibull.data(r, nu_1, theta, lambda, nu_2, alpha, N, b, l)
 #'
 #' @param r scale parameter for Weib(r, nu_1), r > 0
 #' @param nu_1 shape parameter for Weib(r, nu_1), nu_1 > 0
@@ -11,7 +11,7 @@
 #' @param nu_2 shape parameter for Weib(lambda, nu_2), nu_2 > 0
 #' @param alpha copula parameter for tilde(C)_alpha, alpha > 0
 #' @param N sample size
-#' @param c parameter of Unif(0, c) for controlling censoring percentage
+#' @param b parameter of Unif(0, b) for controlling censoring percentage
 #' @param l length for data generation (default = 300)
 #'
 #' @return A list with the following elements:
@@ -24,13 +24,13 @@
 #' @examples
 #' Y = FrankClayton.Weibull.data(r = 1, nu_1 =0.5, theta = 2,
 #'                               lambda = 0.45, nu_2 = 0.5, alpha = 2,
-#'                               N = 100, c = 10, l = 300)
+#'                               N = 100, b = 10, l = 300)
 #'
 #' @author Xinwei Huang
 #'
 #' @export
 
-FrankClayton.Weibull.data = function(r, nu_1, theta, lambda, nu_2, alpha, N, c, l){
+FrankClayton.Weibull.data = function(r, nu_1, theta, lambda, nu_2, alpha, N, b, l){
 
   U = matrix(NA, nrow = N, ncol = l)
 
@@ -44,14 +44,14 @@ FrankClayton.Weibull.data = function(r, nu_1, theta, lambda, nu_2, alpha, N, c, 
 
   Xij = ( -1/r * log(U) )^(1/nu_1) #Xij
 
-  Ci = NA
+  Bi = NA
   Di = NA
   T_i_star = NA
   delta_i_star = NA
 
-  Ci = runif(N ,min = 0, max = c)
+  Bi = runif(N ,min = 0, max = b)
   Di = ( -1/lambda * log(W) )^(1/nu_2)
-  T_i_star = pmin(Di,Ci)
+  T_i_star = pmin(Di,Bi)
   delta_i_star = as.numeric(T_i_star == Di)
 
   Subject = T_ij = delta_ij = NULL

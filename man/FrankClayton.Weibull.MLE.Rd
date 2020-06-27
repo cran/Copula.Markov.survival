@@ -4,7 +4,7 @@
 \alias{FrankClayton.Weibull.MLE}
 \title{Parameter estimation based on the Frank copula for serial dependence and the Clayton copula for dependent censoring with the Weibull distribuions}
 \usage{
-FrankClayton.Weibull.MLE(subject, t.event, event, t.death, death,
+FrankClayton.Weibull.MLE(subject, t.event, event, t.death, death, stageI, Weibull.plot,
                                jackknife, plot, GOF, GOF.plot, rep.GOF, digit)
 }
 \arguments{
@@ -17,6 +17,10 @@ FrankClayton.Weibull.MLE(subject, t.event, event, t.death, death,
 \item{t.death}{a vector for death times}
 
 \item{death}{a vector for death indivator (=1 if death; =0 if censoring)}
+
+\item{stageI}{an option to select MLE or LSE method for the 1st-stage optimization}
+
+\item{Weibull.plot}{if TRUE, show the Weibull probability plot}
 
 \item{jackknife}{if TRUE, the jackknife method is used for estimate covariance matrix (default = TRUE)}
 
@@ -53,12 +57,12 @@ A list with the following elements:
 Perform two-stage estimation based on the Frank copula C_theta for serial dependence and the Clayton copula tilde(C)_alpha for dependent censoring with the marginal disributions Weib(r, nu_1) and Weib(lambda, nu_2). The jackknife method estimates the asymptotic covariance matrix. Parametric bootstrap is applied while doing Kolmogorov-Smirnov tests and Cramer-von Mises test. The guide for using this function shall be explained by Huang (2019).
 }
 \details{
-When jackknife = FALSE, the corresponding values of standard error and confidence interval show NA.
+When jackknife=FALSE, the corresponding standard error and confidence interval values are shown as NA.
 }
 \examples{
 data = FrankClayton.Weibull.data(r = 1, nu_1 =0.5, theta = 2,
                                  lambda = 0.45, nu_2 = 0.5, alpha = 2,
-                                 N = 30, c = 10, l = 300)
+                                 N = 30, b = 10, l = 300)
 
  \donttest{
 FrankClayton.Weibull.MLE(subject = data$Subject,

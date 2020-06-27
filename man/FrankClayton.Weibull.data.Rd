@@ -4,7 +4,7 @@
 \alias{FrankClayton.Weibull.data}
 \title{Generate data from the Frank copula for serial dependence and the Clayton copula for dependent censoring with the Weibull distribuions}
 \usage{
-FrankClayton.Weibull.data(r, nu_1, theta, lambda, nu_2, alpha, N, c, l)
+FrankClayton.Weibull.data(r, nu_1, theta, lambda, nu_2, alpha, N, b, l)
 }
 \arguments{
 \item{r}{scale parameter for Weib(r, nu_1), r > 0}
@@ -21,7 +21,7 @@ FrankClayton.Weibull.data(r, nu_1, theta, lambda, nu_2, alpha, N, c, l)
 
 \item{N}{sample size}
 
-\item{c}{parameter of Unif(0, c) for controlling censoring percentage}
+\item{b}{parameter of Unif(0, b) for controlling censoring percentage}
 
 \item{l}{length for data generation (default = 300)}
 }
@@ -39,7 +39,7 @@ The data generation process is based on the Frank copula C_theta for serial depe
 \examples{
 Y = FrankClayton.Weibull.data(r = 1, nu_1 =0.5, theta = 2,
                               lambda = 0.45, nu_2 = 0.5, alpha = 2,
-                              N = 100, c = 10, l = 300)
+                              N = 100, b = 10, l = 300)
 
 }
 \author{
