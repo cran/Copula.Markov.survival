@@ -2,7 +2,7 @@
 % Please edit documentation in R/FrankFrank.Weibull.MLE.R
 \name{FrankFrank.Weibull.MLE}
 \alias{FrankFrank.Weibull.MLE}
-\title{Parameter estimation based on the Frank copula for serial dependence and the Frank copula for dependent censoring with the Weibull distribuions}
+\title{Parameter estimation based on the Frank copula for serial dependence and the Frank copula for dependent censoring with the Weibull distributions}
 \usage{
 FrankFrank.Weibull.MLE(subject, t.event, event, t.death, death, stageI, Weibull.plot,
                               jackknife, plot, GOF, GOF.plot, rep.GOF, digit)
@@ -12,11 +12,11 @@ FrankFrank.Weibull.MLE(subject, t.event, event, t.death, death, stageI, Weibull.
 
 \item{t.event}{a vector for event times}
 
-\item{event}{a vector for event indivator (=1 if recurrent; =0 if censoring)}
+\item{event}{a vector for event indicator (=1 if recurrent; =0 if censoring)}
 
 \item{t.death}{a vector for death times}
 
-\item{death}{a vector for death indivator (=1 if death; =0 if censoring)}
+\item{death}{a vector for death vindicator (=1 if death; =0 if censoring)}
 
 \item{stageI}{an option to select MLE or LSE method for the 1st-stage optimization}
 
@@ -30,7 +30,7 @@ FrankFrank.Weibull.MLE(subject, t.event, event, t.death, death, stageI, Weibull.
 
 \item{GOF.plot}{if TRUE, show the model diagnostic plot}
 
-\item{rep.GOF}{repitition number of parametric bootstrap}
+\item{rep.GOF}{repetition number of parametric bootstrap}
 
 \item{digit}{accurate to some decimal places}
 }
@@ -38,10 +38,10 @@ FrankFrank.Weibull.MLE(subject, t.event, event, t.death, death, stageI, Weibull.
 A list with the following elements:
 \item{Sample_size}{Sample size N}
 \item{Case}{Count for event occurences}
-\item{r}{Scale parameter for Weib(r, nu_1)}
-\item{nu_1}{Shape parameter for Weib(r, nu_1)}
-\item{lambda}{Scale parameter for Weib(lambda, nu_2)}
-\item{nu_2}{Shape parameter for Weib(lambda, nu_2)}
+\item{scale1}{Scale parameter for Weib(scale1, shape1)}
+\item{shape1}{Shape parameter for Weib(scale1, shape1)}
+\item{scale2}{Scale parameter for Weib(scale2, shape2)}
+\item{shape2}{Shape parameter for Weib(scale2, shape2)}
 \item{theta}{Copula parameter for the Frank copula C_theta}
 \item{alpha}{Copula parameter for the Frank copula tilde(C)_alpha}
 \item{COV}{Asymptotic covariance estimated by the jackknife method}
@@ -54,15 +54,14 @@ A list with the following elements:
 \item{Log_likelihood}{Log-likelihood values}
 }
 \description{
-Perform two-stage estimation based on the Frank copula C_theta for serial dependence and the Frank copula tilde(C)_alpha for dependent censoring with the marginal disributions Weib(r, nu_1) and Weib(lambda, nu_2). The jackknife method estimates the asymptotic covariance matrix. Parametric bootstrap is applied while doing Kolmogorov-Smirnov tests and Cramer-von Mises test. The guide for using this function shall be explained by Huang (2019).
+Perform two-stage estimation based on the Frank copula C_theta for serial dependence and the Frank copula tilde(C)_alpha for dependent censoring with the marginal distributions Weib(scale1, shape1) and Weib(scale2, shape2). The jackknife method estimates the asymptotic covariance matrix. Parametric bootstrap is applied while doing Kolmogorov-Smirnov tests and Cramer-von Mises test. The guide for using this function shall be explained by Huang (2019), and Huang, Wang and Emura (2020).
 }
 \details{
 When jackknife=FALSE, the corresponding standard error and confidence interval values are shown as NA.
 }
 \examples{
-data = FrankFrank.Weibull.data(r = 1, nu_1 =0.5, theta = 2,
-                               lambda = 0.45, nu_2 = 0.5, alpha = 2,
-                               N = 300, b = 10, l = 300)
+data = FrankFrank.Weibull.data(N = 300, scale1 = 1, shape1 =0.5, theta = 2,
+                               scale2 = 0.45, shape2 = 0.5, alpha = 2, b = 10, l = 300)
 
 \donttest{
 FrankFrank.Weibull.MLE(subject = data$Subject,

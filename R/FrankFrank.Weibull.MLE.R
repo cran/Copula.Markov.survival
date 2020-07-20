@@ -1,6 +1,6 @@
-#' Parameter estimation based on the Frank copula for serial dependence and the Frank copula for dependent censoring with the Weibull distribuions
+#' Parameter estimation based on the Frank copula for serial dependence and the Frank copula for dependent censoring with the Weibull distributions
 #'
-#' Perform two-stage estimation based on the Frank copula C_theta for serial dependence and the Frank copula tilde(C)_alpha for dependent censoring with the marginal disributions Weib(r, nu_1) and Weib(lambda, nu_2). The jackknife method estimates the asymptotic covariance matrix. Parametric bootstrap is applied while doing Kolmogorov-Smirnov tests and Cramer-von Mises test. The guide for using this function shall be explained by Huang (2019).
+#' Perform two-stage estimation based on the Frank copula C_theta for serial dependence and the Frank copula tilde(C)_alpha for dependent censoring with the marginal distributions Weib(scale1, shape1) and Weib(scale2, shape2). The jackknife method estimates the asymptotic covariance matrix. Parametric bootstrap is applied while doing Kolmogorov-Smirnov tests and Cramer-von Mises test. The guide for using this function shall be explained by Huang (2019), and Huang, Wang and Emura (2020).
 #'
 #' @usage FrankFrank.Weibull.MLE(subject, t.event, event, t.death, death, stageI, Weibull.plot,
 #'                               jackknife, plot, GOF, GOF.plot, rep.GOF, digit)
@@ -12,25 +12,25 @@
 #'
 #' @param subject a vector for numbers of subject
 #' @param t.event a vector for event times
-#' @param event a vector for event indivator (=1 if recurrent; =0 if censoring)
+#' @param event a vector for event indicator (=1 if recurrent; =0 if censoring)
 #' @param t.death a vector for death times
-#' @param death a vector for death indivator (=1 if death; =0 if censoring)
+#' @param death a vector for death vindicator (=1 if death; =0 if censoring)
 #' @param jackknife if TRUE, the jackknife method is used for estimate covariance matrix (default = TRUE)
 #' @param stageI an option to select MLE or LSE method for the 1st-stage optimization
 #' @param Weibull.plot if TRUE, show the Weibull probability plot
 #' @param plot if TRUE, the plots for marginal distributions are shown (default = FALSE)
 #' @param GOF if TRUE, show the p-values for KS-test and CvM-test
 #' @param GOF.plot if TRUE, show the model diagnostic plot
-#' @param rep.GOF repitition number of parametric bootstrap
+#' @param rep.GOF repetition number of parametric bootstrap
 #' @param digit accurate to some decimal places
 #'
 #' @return A list with the following elements:
 #' \item{Sample_size}{Sample size N}
 #' \item{Case}{Count for event occurences}
-#' \item{r}{Scale parameter for Weib(r, nu_1)}
-#' \item{nu_1}{Shape parameter for Weib(r, nu_1)}
-#' \item{lambda}{Scale parameter for Weib(lambda, nu_2)}
-#' \item{nu_2}{Shape parameter for Weib(lambda, nu_2)}
+#' \item{scale1}{Scale parameter for Weib(scale1, shape1)}
+#' \item{shape1}{Shape parameter for Weib(scale1, shape1)}
+#' \item{scale2}{Scale parameter for Weib(scale2, shape2)}
+#' \item{shape2}{Shape parameter for Weib(scale2, shape2)}
 #' \item{theta}{Copula parameter for the Frank copula C_theta}
 #' \item{alpha}{Copula parameter for the Frank copula tilde(C)_alpha}
 #' \item{COV}{Asymptotic covariance estimated by the jackknife method}
@@ -45,9 +45,8 @@
 #' @details When jackknife=FALSE, the corresponding standard error and confidence interval values are shown as NA.
 #'
 #' @examples
-#' data = FrankFrank.Weibull.data(r = 1, nu_1 =0.5, theta = 2,
-#'                                lambda = 0.45, nu_2 = 0.5, alpha = 2,
-#'                                N = 300, b = 10, l = 300)
+#' data = FrankFrank.Weibull.data(N = 300, scale1 = 1, shape1 =0.5, theta = 2,
+#'                                scale2 = 0.45, shape2 = 0.5, alpha = 2, b = 10, l = 300)
 #'
 #' \donttest{
 #' FrankFrank.Weibull.MLE(subject = data$Subject,
@@ -72,7 +71,7 @@ FrankFrank.Weibull.MLE = function(subject, t.event, event, t.death, death, stage
   result.convergence = c(StageI = NA, StageII = NA)
   #[1]=StageI [2]=StageII
   result.estimate.tilde = result.estimate = result.lowerbound = result.upperbound = result.se = rep(NA, 6)
-  #[1]=r [2]=nu_1 [3]=theta [4]=alpha [5]=lambda [6]=nu_2
+  #[1]=scale1 [2]=shape1 [3]=theta [4]=alpha [5]=scale2 [6]=shape2
   jackknife.error = 0
   result.cov.tilde = NA
   Theta_k = NA
@@ -125,10 +124,10 @@ FrankFrank.Weibull.MLE = function(subject, t.event, event, t.death, death, stage
     delta_i_star = death
     T_i_star = t.death
 
-    lambda = exp(par[1])
-    nu_2 = exp(par[2])
+    scale2 = exp(par[1])
+    shape2 = exp(par[2])
 
-    l = sum(delta_i_star*log(lambda*nu_2) + (nu_2-1)*delta_i_star*log(T_i_star)-lambda*T_i_star^nu_2)
+    l = sum(delta_i_star*log(scale2*shape2) + (shape2-1)*delta_i_star*log(T_i_star)-scale2*T_i_star^shape2)
 
     return(-l)
 
@@ -168,11 +167,11 @@ FrankFrank.Weibull.MLE = function(subject, t.event, event, t.death, death, stage
   #Full likelihood
   logL = function(par){
 
-    lambda = result.estimate[5]
-    nu_2 = result.estimate[6]
+    scale2 = result.estimate[5]
+    shape2 = result.estimate[6]
 
-    r = exp(par[1])
-    nu_1 = exp(par[2])
+    scale1 = exp(par[1])
+    shape1 = exp(par[2])
     theta = par[3]
     alpha = par[4]
 
@@ -216,11 +215,11 @@ FrankFrank.Weibull.MLE = function(subject, t.event, event, t.death, death, stage
       T_i_star = t.death[i]
       delta_i_star = death[i]
       #marginal Weibull for Xij
-      r.T_ij = r*nu_1*T_ij^(nu_1-1)
-      R.T_ij = r*T_ij^nu_1
+      r.T_ij = scale1*shape1*T_ij^(shape1-1)
+      R.T_ij = scale1*T_ij^shape1
       #marginal Weibull for Dij
-      lambda.T_i_star = lambda*nu_2*T_i_star^(nu_2-1)
-      Lambda.T_i_star = lambda*T_i_star^nu_2
+      lambda.T_i_star = scale2*shape2*T_i_star^(shape2-1)
+      Lambda.T_i_star = scale2*T_i_star^shape2
       #likelihood for ni=1
       l_i = delta_i_star*log(lambda.T_i_star) + delta_ij[1]*log(r.T_ij[1]) +
         delta_i_star*delta_ij[1]*log( D.tilde_alpha_11(R.T_ij[1], Lambda.T_i_star) ) +
@@ -271,7 +270,7 @@ FrankFrank.Weibull.MLE = function(subject, t.event, event, t.death, death, stage
         jackknife.error = jackknife.error + 1
         next;
       }else{
-        Theta_k = (log(c(temp$r[1], temp$nu_1[1], exp(temp$theta[1]), exp(temp$alpha[1]), temp$lambda[1], temp$nu_2[1])) - result.estimate.tilde)
+        Theta_k = (log(c(temp$scale1[1], temp$shape1[1], exp(temp$theta[1]), exp(temp$alpha[1]), temp$scale2[1], temp$shape2[1])) - result.estimate.tilde)
         result.cov.tilde = result.cov.tilde + Theta_k %*% t(Theta_k)
       }
     }
@@ -284,34 +283,34 @@ FrankFrank.Weibull.MLE = function(subject, t.event, event, t.death, death, stage
     result.upperbound = result.estimate * exp( 1.96 * diag(result.cov.tilde)^(1/2) )
     result.upperbound[3] = result.estimate[3] + 1.96 * diag(result.cov.tilde)[3]^(1/2)
     result.upperbound[4] = result.estimate[4] + 1.96 * diag(result.cov.tilde)[4]^(1/2)
-    colnames(result.cov.tilde) = c("r.tilde", "nu_1.tilde", "theta.tilde", "alpha.tilde", "lambda.tilde", "nu_2.tilde")
-    rownames(result.cov.tilde) = c("r.tilde", "nu_1.tilde", "theta.tilde", "alpha.tilde", "lambda.tilde", "nu_2.tilde")
+    colnames(result.cov.tilde) = c("scale1.tilde", "shape1.tilde", "theta.tilde", "alpha.tilde", "scale2.tilde", "shape2.tilde")
+    rownames(result.cov.tilde) = c("scale1.tilde", "shape1.tilde", "theta.tilde", "alpha.tilde", "scale2.tilde", "shape2.tilde")
   }
   #####End Jackknife
 
   #####Begin Figure
   if(jackknife == TRUE & plot == TRUE){
-    r = result.estimate[1]
-    nu_1 = result.estimate[2]
+    scale1 = result.estimate[1]
+    shape1 = result.estimate[2]
     V_r = result.cov.tilde[1,1]
     V_nu_1 = result.cov.tilde[2,2]
     Cov_r_nu_1 = result.cov.tilde[1,2]
     t.event.range = seq(0.9*min(t.event), ceiling(max(t.event)), length.out = 200)
-    r.hazard = r * nu_1 * t.event.range^(nu_1 - 1)
-    r.hazard.se = sqrt( ( r * nu_1 * t.event.range^(nu_1-1) )^2 *
-                          ( V_r + (1+log(t.event.range)*nu_1)*Cov_r_nu_1 + (1+log(t.event.range)*nu_1)^2*V_nu_1 ) )
+    r.hazard = scale1 * shape1 * t.event.range^(shape1 - 1)
+    r.hazard.se = sqrt( ( scale1 * shape1 * t.event.range^(shape1-1) )^2 *
+                          ( V_r + (1+log(t.event.range)*shape1)*Cov_r_nu_1 + (1+log(t.event.range)*shape1)^2*V_nu_1 ) )
     r.hazard.ub = r.hazard + 1.96 * r.hazard.se
     r.hazard.lb = r.hazard - 1.96 * r.hazard.se
 
-    lambda = result.estimate[5]
-    nu_2 = result.estimate[6]
+    scale2 = result.estimate[5]
+    shape2 = result.estimate[6]
     V_lambda = result.cov.tilde[5,5]
     V_nu_2 = result.cov.tilde[6,6]
     Cov_lambda_nu_2 = result.cov.tilde[5,6]
     t.death.range = seq(0.9*min(t.death), ceiling(max(t.death)), length.out = 200)
-    lambda.hazard = lambda * nu_2 * t.death.range^(nu_2 - 1)
-    lambda.hazard.se = sqrt( ( lambda * nu_2 * t.death.range^(nu_2-1) )^2 *
-                               ( V_lambda + (1+log(t.death.range)*nu_2)*Cov_lambda_nu_2 + (1+log(t.death.range)*nu_2)^2*V_nu_2 ) )
+    lambda.hazard = scale2 * shape2 * t.death.range^(shape2 - 1)
+    lambda.hazard.se = sqrt( ( scale2 * shape2 * t.death.range^(shape2-1) )^2 *
+                               ( V_lambda + (1+log(t.death.range)*shape2)*Cov_lambda_nu_2 + (1+log(t.death.range)*shape2)^2*V_nu_2 ) )
     lambda.hazard.ub = lambda.hazard + 1.96 * lambda.hazard.se
     lambda.hazard.lb = lambda.hazard - 1.96 * lambda.hazard.se
 
@@ -355,9 +354,8 @@ FrankFrank.Weibull.MLE = function(subject, t.event, event, t.death, death, stage
     data.sp = NULL
     for(b in c(1:rep.GOF)){
       set.seed(b)
-      data_b = FrankFrank.Weibull.data(r = result.estimate[1], nu_1 = result.estimate[2], theta = result.estimate[3],
-                                           lambda = result.estimate[5], nu_2 = result.estimate[6], alpha = result.estimate[4],
-                                           N = N, b = max(t.death[death==0]), l = 200)
+      data_b = FrankFrank.Weibull.data(N = N, scale1 = result.estimate[1], shape1 = result.estimate[2], theta = result.estimate[3],
+                                           scale2 = result.estimate[5], shape2 = result.estimate[6], alpha = result.estimate[4], b = max(t.death[death==0]), l = 200)
       result.bootstrap.temp = try(FrankFrank.Weibull.MLE(subject = data_b$Subject, t.event = data_b$T_ij, event = data_b$delta_ij,
                                                              t.death = data_b$T_i_star, death = data_b$delta_i_star, stageI = stageI,
                                                              jackknife = FALSE, plot = FALSE, GOF = FALSE))
@@ -392,12 +390,12 @@ FrankFrank.Weibull.MLE = function(subject, t.event, event, t.death, death, stage
   #####Likelihood value
   logL.value = function(par){
 
-    r = par[1]
-    nu_1 = par[2]
+    scale1 = par[1]
+    shape1 = par[2]
     theta = par[3]
     alpha = par[4]
-    lambda = par[5]
-    nu_2 = par[6]
+    scale2 = par[5]
+    shape2 = par[6]
 
     #corresponding D function
     A_theta = function(s,t){
@@ -439,11 +437,11 @@ FrankFrank.Weibull.MLE = function(subject, t.event, event, t.death, death, stage
       T_i_star = t.death[i]
       delta_i_star = death[i]
       #marginal Weibull for Xij
-      r.T_ij = r*nu_1*T_ij^(nu_1-1)
-      R.T_ij = r*T_ij^nu_1
+      r.T_ij = scale1*shape1*T_ij^(shape1-1)
+      R.T_ij = scale1*T_ij^shape1
       #marginal Weibull for Dij
-      lambda.T_i_star = lambda*nu_2*T_i_star^(nu_2-1)
-      Lambda.T_i_star = lambda*T_i_star^nu_2
+      lambda.T_i_star = scale2*shape2*T_i_star^(shape2-1)
+      Lambda.T_i_star = scale2*T_i_star^shape2
       #likelihood for ni=1
       l_i = delta_i_star*log(lambda.T_i_star) + delta_ij[1]*log(r.T_ij[1]) +
         delta_i_star*delta_ij[1]*log( D.tilde_alpha_11(R.T_ij[1], Lambda.T_i_star) ) +
@@ -470,10 +468,10 @@ FrankFrank.Weibull.MLE = function(subject, t.event, event, t.death, death, stage
   return(
     list(
       Sample_size = N, Case = case,
-      r = round(c(Estimate = result.estimate[1], SE = result.se[1], Lower = result.lowerbound[1], Upper = result.upperbound[1]),digit),
-      nu_1 = round(c(Estimate = result.estimate[2], SE = result.se[2], Lower = result.lowerbound[2], Upper = result.upperbound[2]),digit),
-      lambda = round(c(Estimate = result.estimate[5], SE = result.se[5], Lower = result.lowerbound[5], Upper = result.upperbound[5]),digit),
-      nu_2 = round(c(Estimate = result.estimate[6], SE = result.se[6], Lower = result.lowerbound[6], Upper = result.upperbound[6]),digit),
+      scale1 = round(c(Estimate = result.estimate[1], SE = result.se[1], Lower = result.lowerbound[1], Upper = result.upperbound[1]),digit),
+      shape1 = round(c(Estimate = result.estimate[2], SE = result.se[2], Lower = result.lowerbound[2], Upper = result.upperbound[2]),digit),
+      scale2 = round(c(Estimate = result.estimate[5], SE = result.se[5], Lower = result.lowerbound[5], Upper = result.upperbound[5]),digit),
+      shape2 = round(c(Estimate = result.estimate[6], SE = result.se[6], Lower = result.lowerbound[6], Upper = result.upperbound[6]),digit),
       theta = round(c(Estimate = result.estimate[3], SE = result.se[3], Lower = result.lowerbound[3], Upper = result.upperbound[3]),digit),
       alpha = round(c(Estimate = result.estimate[4], SE = result.se[4], Lower = result.lowerbound[4], Upper = result.upperbound[4]),digit),
       COV = result.cov.tilde,

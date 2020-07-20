@@ -1,36 +1,36 @@
-#' Generate data from the Frank copula for serial dependence and the Frank copula for dependent censoring with the Weibull distribuions
+#' Generate data from the Frank copula for serial dependence and the Frank copula for dependent censoring with the Weibull distributions
 #'
-#' The data generation process is based on the Frank copula C_theta for serial dependence and the Frank copula tilde(C)_alpha for dependent censoring with the marginal disributions Weib(r, nu_1) and Weib(lambda, nu_2). Censoring percentage can be controled by constant c. This function is used when doing parametric bootstrap. The guide for using this function shall be explained by Huang (2019).
+#' The data generation process is based on the Frank copula C_theta for serial dependence and the Frank copula tilde(C)_alpha for dependent censoring with the marginal distributions Weib(scale1, shape1) and Weib(scale2, shape2). Censoring percentage can be controlled by constant c. This function is used when doing parametric bootstrap. The guide for using this function shall be explained by Huang (2019), and Huang, Wang and Emura (2020).
 #'
-#' @usage FrankFrank.Weibull.data(r, nu_1, theta, lambda, nu_2, alpha, N, b, l)
+#' @usage FrankFrank.Weibull.data(N, scale1, shape1, theta, scale2, shape2, alpha, b, l)
 #'
-#' @param r scale parameter for Weib(r, nu_1), r > 0
-#' @param nu_1 shape parameter for Weib(r, nu_1), nu_1 > 0
-#' @param theta copula parameter for C_theta, theta \eqn{\neq} 0
-#' @param lambda scale parameter for Weib(lambda, nu_2), lambda > 0
-#' @param nu_2 shape parameter for Weib(lambda, nu_2), nu_2 > 0
-#' @param alpha copula parameter for tilde(C)_alpha, alpha \eqn{\neq} 0
 #' @param N sample size
+#' @param scale1 scale parameter for Weib(scale1, shape1), scale1 > 0
+#' @param shape1 shape parameter for Weib(scale1, shape1), shape1 > 0
+#' @param theta copula parameter for C_theta, theta \eqn{\neq} 0
+#' @param scale2 scale parameter for Weib(scale2, shape2), scale2 > 0
+#' @param shape2 shape parameter for Weib(scale2, shape2), shape2 > 0
+#' @param alpha copula parameter for tilde(C)_alpha, alpha \eqn{\neq} 0
 #' @param b parameter of Unif(0, b) for controlling censoring percentage
 #' @param l length for data generation (default = 300)
 #'
 #' @return A list with the following elements:
 #' \item{Subject}{a vector for numbers of subject}
 #' \item{T_ij}{a vector for event times}
-#' \item{delta_ij}{a vector for event indivator (=1 if recurrent; =0 if censoring)}
+#' \item{delta_ij}{a vector for event indicator (=1 if recurrent; =0 if censoring)}
 #' \item{T_i_star}{a vector for death times}
-#' \item{delta_i_star}{a vector for death indivator (=1 if death; =0 if censoring)}
+#' \item{delta_i_star}{a vector for death indicator (=1 if death; =0 if censoring)}
 #'
 #' @examples
-#' Y = FrankFrank.Weibull.data(r = 1, nu_1 =0.5, theta = 2,
-#'                             lambda = 0.45, nu_2 = 0.5, alpha = 2,
-#'                             N = 100, b = 10, l = 300)
+#' Y = FrankFrank.Weibull.data(N = 100, scale1 = 1, shape1 =0.5, theta = 2,
+#'                             scale2 = 0.45, shape2 = 0.5, alpha = 2, b = 10, l = 300)
 #'
 #' @author Xinwei Huang
+#' @references  Huang XW, Wang W, Emura T (2020) A copula-based Markov chain model for serially dependent event times with a dependent terminal event. Japanese Journal of Statistics & Data Science. Accepted.
 #'
 #' @export
 
-FrankFrank.Weibull.data = function(r, nu_1, theta, lambda, nu_2, alpha, N, b, l){
+FrankFrank.Weibull.data = function(N, scale1, shape1, theta, scale2, shape2, alpha, b, l){
 
   U = matrix(NA, nrow = N, ncol = l)
 
@@ -43,7 +43,7 @@ FrankFrank.Weibull.data = function(r, nu_1, theta, lambda, nu_2, alpha, N, b, l)
 
   }
 
-  Xij = ( -1/r * log(U) )^(1/nu_1) #Xij
+  Xij = ( -1/scale1 * log(U) )^(1/shape1) #Xij
 
   Bi = NA
   Di = NA
@@ -51,7 +51,7 @@ FrankFrank.Weibull.data = function(r, nu_1, theta, lambda, nu_2, alpha, N, b, l)
   delta_i_star = NA
 
   Bi = runif(N ,min = 0, max = b)
-  Di = ( -1/lambda * log(W) )^(1/nu_2)
+  Di = ( -1/scale2 * log(W) )^(1/shape2)
   T_i_star = pmin(Di,Bi)
   delta_i_star = as.numeric(T_i_star == Di)
 

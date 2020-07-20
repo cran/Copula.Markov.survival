@@ -2,24 +2,24 @@
 % Please edit documentation in R/ClaytonClayton.Weibull.data.R
 \name{ClaytonClayton.Weibull.data}
 \alias{ClaytonClayton.Weibull.data}
-\title{Generate data from the Clayton copula for serial dependence and the Clayton copula for dependent censoring with the Weibull distribuions}
+\title{Generate data from the Clayton copula for serial dependence and the Clayton copula for dependent censoring with the Weibull distributions}
 \usage{
-ClaytonClayton.Weibull.data(r, nu_1, theta, lambda, nu_2, alpha, N, b, l)
+ClaytonClayton.Weibull.data(N, scale1, shape1, theta, scale2, shape2, alpha,  b, l)
 }
 \arguments{
-\item{r}{scale parameter for Weib(r, nu_1), r > 0}
+\item{N}{sample size}
 
-\item{nu_1}{shape parameter for Weib(r, nu_1), nu_1 > 0}
+\item{scale1}{scale parameter for Weib(scale1, shape1), scale1 > 0}
+
+\item{shape1}{shape parameter for Weib(scale1, shape1), shape1 > 0}
 
 \item{theta}{copula parameter for C_theta, theta > 0}
 
-\item{lambda}{scale parameter for Weib(lambda, nu_2), lambda > 0}
+\item{scale2}{scale parameter for Weib(scale2, shape2), scale2 > 0}
 
-\item{nu_2}{shape parameter for Weib(lambda, nu_2), nu_2 > 0}
+\item{shape2}{shape parameter for Weib(scale2, shape2), shape2 > 0}
 
 \item{alpha}{copula parameter for tilde(C)_alpha, alpha > 0}
-
-\item{N}{sample size}
 
 \item{b}{parameter of Unif(0, b) for controlling censoring percentage}
 
@@ -29,18 +29,20 @@ ClaytonClayton.Weibull.data(r, nu_1, theta, lambda, nu_2, alpha, N, b, l)
 A list with the following elements:
 \item{Subject}{a vector for numbers of subject}
 \item{T_ij}{a vector for event times}
-\item{delta_ij}{a vector for event indivator (=1 if recurrent; =0 if censoring)}
+\item{delta_ij}{a vector for event indicator (=1 if recurrent; =0 if censoring)}
 \item{T_i_star}{a vector for death times}
-\item{delta_i_star}{a vector for death indivator (=1 if death; =0 if censoring)}
+\item{delta_i_star}{a vector for death indicator (=1 if death; =0 if censoring)}
 }
 \description{
-The data generation process is based on the Clayton copula C_theta for serial dependence and the Clayton copula tilde(C)_alpha for dependent censoring with the marginal disributions Weib(r, nu_1) and Weib(lambda, nu_2). Censoring percentage can be controled by constant c. This function is used when doing parametric bootstrap. The guide for using this function shall be explained by Huang (2019).
+The data generation process is based on the Clayton copula C_theta for serial dependence and the Clayton copula tilde(C)_alpha for dependent censoring with the marginal distributions Weib(scale1, shape1) and Weib(scale2, shape2). Censoring percentage can be controlled by constant b. This function is used when doing parametric bootstrap. The guide for using this function shall be explained by Huang (2019), and Huang, Wang and Emura (2020).
 }
 \examples{
-Y = ClaytonClayton.Weibull.data(r = 1, nu_1 =0.5, theta = 2,
-                                lambda = 0.45, nu_2 = 0.5, alpha = 2,
-                                N = 100, b = 10, l = 300)
+Y = ClaytonClayton.Weibull.data(N = 100, scale1 = 1, shape1 =0.5, theta = 2,
+                                scale2 = 0.45, shape2 = 0.5, alpha = 2, b = 10, l = 300)
 
+}
+\references{
+Huang XW, Wang W, Emura T (2020) A copula-based Markov chain model for serially dependent event times with a dependent terminal event. Japanese Journal of Statistics & Data Science. Accepted.
 }
 \author{
 Xinwei Huang
